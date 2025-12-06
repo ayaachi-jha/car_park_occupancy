@@ -20,3 +20,4 @@ env/
 venv/
 .venv/
 chatbot/venv/
+faiss_index/
