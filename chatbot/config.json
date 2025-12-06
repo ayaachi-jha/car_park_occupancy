@@ -1,0 +1,14 @@
+{
+    "hive": {
+        "host_name": "localhost",
+        "port": 10000,
+        "user": "hadoop",
+        "database": "default"
+    },
+    "hbase" : {
+        "host_name": "localhost",
+        "port": 9090
+    },
+    "faiss_index_path": "faiss_index",
+    "database_metadata_path": "database_metadata"
+}

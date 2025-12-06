@@ -1,23 +1,43 @@
 import happybase
 from pyhive import hive
 from geopy.geocoders import Nominatim
+import json
 
 # Imports for RAG
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 import os
 
-# RAG Tool
+CURRENT_DIRECTORY = os.getcwd()
+CONFIG_PATH = os.path.join(CURRENT_DIRECTORY, "config.json")
+
+## Get configurations
+def get_configs(conf_path):
+    with open(conf_path, 'r') as config_file:
+        config_data = json.load(config_file)
+    return config_data
+
+config_data = get_configs(CONFIG_PATH)
+
+HIVE_HOST_NAME = config_data.get("hive").get("host_name")
+HIVE_PORT = config_data.get("hive").get("port")
+HIVE_USER = config_data.get("hive").get("user")
+HIVE_DATABASE = config_data.get("hive").get("database")
+
+HBASE_HOST_NAME = config_data.get("hbase").get("host_name")
+HBASE_PORT = config_data.get("hbase").get("port")
+
+FAISS_INDEX_PATH = os.path.join(CURRENT_DIRECTORY, "faiss_index")
+HIVE_SCHEMA_METADATA_PATH = os.path.join(CURRENT_DIRECTORY, "database_metadata/hive_schema.xml")
+
+
+# RAG tools
 
 embeddings_model = None
 vector_db = None
-FAISS_INDEX_PATH = "faiss_index"
 
 def initialize_rag():
-    """
-    Initializes the RAG components (embedding model and vector DB).
-    This is called once when the application starts.
-    """
+    """Initializes the RAG components."""
     global embeddings_model, vector_db
     if os.path.exists(FAISS_INDEX_PATH):
         print("Initializing RAG components...")
@@ -28,37 +48,86 @@ def initialize_rag():
         vector_db = FAISS.load_local(FAISS_INDEX_PATH, embeddings_model, allow_dangerous_deserialization=True)
         print("RAG components initialized successfully.")
     else:
-        print(f"Warning: FAISS index not found at '{FAISS_INDEX_PATH}'. The search_knowledge_base tool will not work.")
-        print("Please run 'python ingest.py' to create the index.")
+        print(f"Warning: FAISS index not found at '{FAISS_INDEX_PATH}'. search_knowledge_base will not work.")
 
 def search_knowledge_base(query: str) -> str:
-    """
-    Searches the knowledge base of text documents for information relevant to the user's query.
-    Use this for general questions about the system, its purpose, or for information not found in the databases.
-    :param query: The user's query or search term.
-    """
+    """Searches the knowledge base of text documents for relevant information."""
     global vector_db
     if vector_db is None:
-        return "Error: The knowledge base is not available. The FAISS index has not been loaded."
-
+        return "Error: Knowledge base not available. FAISS index not loaded."
     try:
-        # Perform a similarity search
-        results = vector_db.similarity_search(query, k=3) # Get top 3 most relevant chunks
-
+        results = vector_db.similarity_search(query, k=3)
         if not results:
             return "No relevant information found in the knowledge base."
-
-        # Format the results into a single context string
         context = "--- Relevant Information from Knowledge Base ---"
+
         for i, doc in enumerate(results):
-            context += f"Source Document {i+1}:\n\n"
-            context += f"{doc.page_content}\n\n"
+            context += f"Source Document {i+1}:\n{doc.page_content}\n\n"
         return context
     except Exception as e:
-        return f"An error occurred during the knowledge base search: {e}"
+        return f"An error occurred during knowledge base search: {e}"
+
+def read_xml_as_text(file_path):
+    """Reads an XML file and returns its content as a string."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        return f"Error: Metadata file not found at {file_path}"
+    except Exception as e:
+        return f"An error occurred while reading the metadata file: {e}"
+
+def get_relevant_tables() -> str:
+    """
+    Returns a string containing the schema (tables, columns, descriptions) for all available Hive tables.
+    This should be the first step before writing any SQL query.
+    """
+    return read_xml_as_text(HIVE_SCHEMA_METADATA_PATH)
 
 
-# --- Database and Geocoding Tools ---
+# Database and Geocoding Tools
+
+def query_hive(query: str) -> str:
+    if "delete" in query.lower() or "insert" in query.lower():
+        print(f"Stopping from running delete or insert query.")
+        return "You cannot run DELETE or INSERT queries. You are only allowed to run SELECT queries."
+
+    host_name = HIVE_HOST_NAME
+    port = HIVE_PORT
+    user = HIVE_USER
+    database = HIVE_DATABASE
+    try:
+        conn = hive.Connection(host=host_name, port=port, username=user, database=database)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        result = cursor.fetchall()
+        return str(result)
+    except Exception as e:
+        return f"Error executing Hive query: {e}"
+    finally:
+        if 'conn' in locals() and conn: conn.close()
+
+
+def query_hbase(table_name: str, row_key: str) -> str:
+    host_name = HBASE_HOST_NAME
+    port = HBASE_PORT
+    try:
+        connection = happybase.Connection(host=host_name, port=port)
+        table = connection.table(table_name)
+        row = table.row(row_key)
+        decoded_row = {k.decode('utf-8'): v.decode('utf-8') for k, v in row.items()}
+        return str(decoded_row)
+    except Exception as e:
+        return f"Error executing HBase query: {e}"
+    finally:
+        if 'connection' in locals() and connection.transport.is_open(): connection.close()
+
+def get_location_from_longitude_latitude(longitude: float, latitude: float) -> str:
+    geolocator = Nominatim(user_agent="project-birmingham-car-park-chatbot")
+    location = geolocator.reverse((latitude, longitude))
+    return str(location.raw) if location else "Location not found."
+
+#### NOT USED ######
 
 def get_hive_schema(table_name: str) -> str:
     """
@@ -93,38 +162,3 @@ def get_hive_schema(table_name: str) -> str:
         return f"Error executing Hive query to get schema: {e}"
     finally:
         if 'conn' in locals() and conn: conn.close()
-
-def query_hive(query: str) -> str:
-    host_name = "localhost"
-    port = 10000
-    user = "hadoop"
-    database = "default"
-    try:
-        conn = hive.Connection(host=host_name, port=port, username=user, database=database)
-        cursor = conn.cursor()
-        cursor.execute(query)
-        result = cursor.fetchall()
-        return str(result)
-    except Exception as e:
-        return f"Error executing Hive query: {e}"
-    finally:
-        if 'conn' in locals() and conn: conn.close()
-
-def query_hbase(table_name: str, row_key: str) -> str:
-    host_name = "localhost"
-    port = 9090
-    try:
-        connection = happybase.Connection(host=host_name, port=port)
-        table = connection.table(table_name)
-        row = table.row(row_key)
-        decoded_row = {k.decode('utf-8'): v.decode('utf-8') for k, v in row.items()}
-        return str(decoded_row)
-    except Exception as e:
-        return f"Error executing HBase query: {e}"
-    finally:
-        if 'connection' in locals() and connection.transport.is_open(): connection.close()
-
-def get_location_from_longitude_latitude(longitude: float, latitude: float) -> str:
-    geolocator = Nominatim(user_agent="project-birmingham-car-park-chatbot")
-    location = geolocator.reverse((latitude, longitude))
-    return str(location.raw) if location else "Location not found."

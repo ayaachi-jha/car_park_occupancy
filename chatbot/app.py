@@ -110,4 +110,5 @@ if __name__ == '__main__':
     # Initialize the RAG system on startup
     create_vector_db()
     initialize_rag()
+    # RUN ITTTT!!!!!
     app.run(host='0.0.0.0', port=3030, debug=True)

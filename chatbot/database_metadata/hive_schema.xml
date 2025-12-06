@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<table_schema>
+  <table name="ayaachi_parking_avail_data" description="Contains historical and analytical parking data. All analytical queries should use this table.">
+    <columns>
+      <column>
+        <name>id</name>
+        <type>INT</type>
+        <description>A unique ID for each data record.</description>
+      </column>
+      <column>
+        <name>system_code_number</name>
+        <type>STRING</type>
+        <description>The unique identifier for the car park.</description>
+      </column>
+      <column>
+        <name>capacity</name>
+        <type>INT</type>
+        <description>The total number of parking spaces in the car park.</description>
+      </column>
+      <column>
+        <name>occupancy</name>
+        <type>INT</type>
+        <description>The number of spaces that were occupied at the time of the record.</description>
+      </column>
+      <column>
+        <name>available_occupancy</name>
+        <type>INT</type>
+        <description>The number of spaces that were available at the time of the record.</description>
+      </column>
+      <column>
+        <name>vehicle_type</name>
+        <type>STRING</type>
+        <description>The type of vehicle associated with the record.</description>
+      </column>
+      <column>
+        <name>traffic_condition_nearby</name>
+        <type>STRING</type>
+        <description>A description of the traffic status near the car park (e.g., 'heavy', 'light').</description>
+      </column>
+      <column>
+        <name>queue_length</name>
+        <type>INT</type>
+        <description>The number of vehicles waiting to enter the car park at the time of the record.</description>
+      </column>
+      <column>
+        <name>is_special_day</name>
+        <type>TINYINT</type>
+        <description>A flag (1 for true, 0 for false) indicating if the record is from a special day or event.</description>
+      </column>
+      <column>
+        <name>record_timestamp</name>
+        <type>TIMESTAMP</type>
+        <description>The exact date and time of the data record.</description>
+      </column>
+      <column>
+        <name>latitude</name>
+        <type>DOUBLE</type>
+        <description>The geographic latitude of the car park.</description>
+      </column>
+      <column>
+        <name>longitude</name>
+        <type>DOUBLE</type>
+        <description>The geographic longitude of the car park.</description>
+      </column>
+    </columns>
+  </table>
+  <table name="ayaachi_parking_latest_hbase_map" description="A real-time view of the latest data for all car parks, mapped from HBase.">
+    <columns>
+      <column>
+        <name>system_code_number</name>
+        <type>STRING</type>
+        <description>The unique identifier for the car park. This is the primary key.</description>
+      </column>
+      <column>
+        <name>capacity</name>
+        <type>INT</type>
+        <description>The total number of parking spaces in the car park.</description>
+      </column>
+      <column>
+        <name>occupancy</name>
+        <type>INT</type>
+        <description>The number of spaces that are currently occupied.</description>
+      </column>
+      <column>
+        <name>available_occupancy</name>
+        <type>INT</type>
+        <description>The number of spaces that are currently available.</description>
+      </column>
+      <column>
+        <name>queue_length</name>
+        <type>INT</type>
+        <description>The number of vehicles currently waiting to enter the car park.</description>
+      </column>
+      <column>
+        <name>traffic_condition_nearby</name>
+        <type>STRING</type>
+        <description>A description of the current traffic status near the car park (e.g., 'heavy', 'light').</description>
+      </column>
+      <column>
+        <name>latitude</name>
+        <type>DOUBLE</type>
+        <description>The geographic latitude of the car park.</description>
+      </column>
+      <column>
+        <name>longitude</name>
+        <type>DOUBLE</type>
+        <description>The geographic longitude of the car park.</description>
+      </column>
+    </columns>
+  </table>
+</table_schema>

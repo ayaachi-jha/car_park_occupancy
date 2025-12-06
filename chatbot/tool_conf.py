@@ -2,22 +2,34 @@ from tools import (
     query_hive, 
     query_hbase, 
     get_location_from_longitude_latitude, 
-    get_hive_schema,
-    search_knowledge_base
+    search_knowledge_base,
+    get_relevant_tables
 )
 
 TOOL_LIST = [
     {
         "type": "function",
         "function": {
-            "name": "search_knowledge_base",
-            "description": "Searches a knowledge base of text documents for information. Use this for general questions about the system, its purpose, or for information not found in the databases.",
+            "name": "get_relevant_tables",
+            "description": "Call this first to get the schemas of all available Hive tables before writing a SQL query. It provides table names, column names, data types, and descriptions.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_hive",
+            "description": "Executes a read-only SQL query on a Hive table, based on a schema you have already fetched.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The user's question or search term to look for in the documents.",
+                        "description": "The SQL query to execute.",
                     },
                 },
                 "required": ["query"],
@@ -27,31 +39,14 @@ TOOL_LIST = [
     {
         "type": "function",
         "function": {
-            "name": "get_hive_schema",
-            "description": "Use this tool to get the schema of a Hive table before you write a SQL query.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "table_name": {
-                        "type": "string",
-                        "description": "The name of the Hive table to describe, e.g., 'ayaachi_parking_avail_data'",
-                    },
-                },
-                "required": ["table_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "query_hive",
-            "description": "Executes a read-only SQL query on a Hive table.",
+            "name": "search_knowledge_base",
+            "description": "Searches text documents for general information about the system or its purpose.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The SQL query to execute, based on a schema you have already fetched.",
+                        "description": "The user's question or search term.",
                     },
                 },
                 "required": ["query"],
@@ -62,7 +57,7 @@ TOOL_LIST = [
         "type": "function",
         "function": {
             "name": "query_hbase",
-            "description": "Fetches real-time data for a specific car park from an HBase table using its row key.",
+            "description": "Fetches real-time data for a specific car park from HBase using its row key.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -100,6 +95,6 @@ AVAILABLE_FUNCTIONS = {
     "query_hive": query_hive,
     "query_hbase": query_hbase,
     "get_location_from_longitude_latitude": get_location_from_longitude_latitude,
-    "get_hive_schema": get_hive_schema,
     "search_knowledge_base": search_knowledge_base,
+    "get_relevant_tables": get_relevant_tables,
 }
