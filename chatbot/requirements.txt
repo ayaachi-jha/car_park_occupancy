@@ -1,2 +1,4 @@
 Flask
 openai
+happybase
+PyHive[hive]
