@@ -1,4 +1,4 @@
-from tools import query_hive, query_hbase
+from tools import query_hive, query_hbase, get_location_from_longitude_latitude
 
 TOOL_LIST = [
     {
@@ -22,7 +22,7 @@ TOOL_LIST = [
         "type": "function",
         "function": {
             "name": "query_hbase",
-            "description": "Fetches real-time availability for a specific car park from an HBase table using its row key (SystemCode).",
+            "description": "Fetches real-time availability for a specific car park from an HBase table using its row key (system_code_number).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -32,16 +32,38 @@ TOOL_LIST = [
                     },
                     "row_key": {
                         "type": "string",
-                        "description": "The row key to fetch, which corresponds to the car park's SystemCode, e.g., 'BHMBCCMKT01'",
+                        "description": "The row key to fetch, which corresponds to the car park's system_code_number, e.g., 'BHMBCCMKT01'",
                     },
                 },
                 "required": ["table_name", "row_key"],
             },
         },
-    }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_location_from_longitude_latitude",
+            "description": "Gives the location of a place from the longitude and the latitude. Use it when you know the longitude and latitude of the place.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "longitude": {
+                        "type": "number",
+                        "description": "The longitude of the address of the location which is needed.",
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "description": "The latitude of the address of the location which is needed.",
+                    },
+                },
+                "required": ["longitude", "latitude"],
+            },
+        },
+    },
 ]
 
 AVAILABLE_FUNCTIONS = {
     "query_hive": query_hive,
     "query_hbase": query_hbase,
+    "get_location_from_longitude_latitude": get_location_from_longitude_latitude,
 }

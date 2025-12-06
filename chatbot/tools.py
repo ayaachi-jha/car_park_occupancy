@@ -1,33 +1,25 @@
-
 import happybase
 from pyhive import hive
+
+from geopy.geocoders import Nominatim
 
 def query_hive(query: str) -> str:
     """
     Executes a read-only SQL query on a Hive table and returns the result.
     :param query: The SQL query to execute.
     """
-    # TODO: Replace with your EMR master node's hostname or IP.
     host_name = "localhost"
     port = 10000
-
-    # TODO: Update with your username and database if needed.
     user = "hadoop"
     database = "default"
 
     try:
-        # Establish connection to Hive
         conn = hive.Connection(host=host_name, port=port, username=user, database=database)
         cursor = conn.cursor()
-
-        # Execute the query
         cursor.execute(query)
-
-        # Fetch and format results
         result = cursor.fetchall()
         conn.close()
 
-        # Convert list of tuples to a string format for the LLM
         return str(result)
     except Exception as e:
         return f"Error executing Hive query: {e}"
@@ -38,39 +30,56 @@ def query_hbase(table_name: str, row_key: str) -> str:
     :param table_name: The name of the HBase table.
     :param row_key: The row key to fetch.
     """
-    # TODO: Replace with your HBase Thrift server's hostname or IP.
-    # This might be your EMR master node.
     host_name = "localhost"
     port = 9090
 
     try:
-        # Establish connection to HBase
         connection = happybase.Connection(host=host_name, port=port)
         table = connection.table(table_name)
-
-        # Fetch the row
         row = table.row(row_key)
-
         connection.close()
 
-        # Decode bytes to string for JSON serialization
         decoded_row = {k.decode('utf-8'): v.decode('utf-8') for k, v in row.items()}
 
         return str(decoded_row)
     except Exception as e:
         return f"Error executing HBase query: {e}"
 
-# Example usage (for testing purposes)
+def get_location_from_longitude_latitude(longitude: float, latitude: float) -> str:
+    """
+    Returns the location of the place from the longitude and the latitude
+
+    :param longitude: Longitude coordinates
+    :param latitude: Latitude coordinates
+    """
+    # Init the Nominatim geocoder
+    # unique user_agent string
+    geolocator = Nominatim(user_agent="project-birmingham-car-park-chatbot")
+
+    # Perform reverse geocoding
+    location = geolocator.reverse((latitude, longitude))
+
+    # Print the full address
+    if location:
+        print(f"Address: {location.address}")
+        print(f"Raw location data: {location.raw}")
+        # You can access more specific details from location.raw if needed
+        # print(f"Raw data: {location.raw}")
+        return str(location.raw)
+    else:
+        print("Could not find location for the provided coordinates.")
+
+
+
 if __name__ == '__main__':
     # pass
     print("This file contains tool definitions for querying Hive and HBase.")
-    print("It is not meant to be run directly in production, but for import.")
 
-    # print("Testing Hive query...")
-    # hive_result = query_hive("SELECT * FROM ayaachi_parking_data LIMIT 5")
-    # print(f"Hive Result: {hive_result}")
+    print("Testing Hive query...")
+    hive_result = query_hive("SELECT * FROM ayaachi_parking_avail_data LIMIT 5")
+    print(f"Hive Result: {hive_result}")
 
-    # print("\nTesting HBase query...")
-    # hbase_result = query_hbase("ayaachi_parking_availability_latest", "BHMBCCMKT01")
-    # print(f"HBase Result: {hbase_result}")
+    print("\nTesting HBase query...")
+    hbase_result = query_hbase("ayaachi_parking_availability_latest", "BHMBCCMKT01")
+    print(f"HBase Result: {hbase_result}")
 
