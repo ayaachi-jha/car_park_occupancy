@@ -1,6 +1,23 @@
-from tools import query_hive, query_hbase, get_location_from_longitude_latitude
+from tools import query_hive, query_hbase, get_location_from_longitude_latitude, get_hive_schema
 
 TOOL_LIST = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_hive_schema",
+            "description": "Use this tool first to get the schema of a Hive table before you write a SQL query. This is a mandatory first step.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "The name of the Hive table to describe, e.g., 'ayaachi_parking_avail_data'",
+                    },
+                },
+                "required": ["table_name"],
+            },
+        },
+    },
     {
         "type": "function",
         "function": {
@@ -11,7 +28,7 @@ TOOL_LIST = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The SQL query to execute. Should be a SELECT statement.",
+                        "description": "The SQL query to execute. Should be a SELECT statement based on a schema you have already fetched.",
                     },
                 },
                 "required": ["query"],
@@ -66,4 +83,5 @@ AVAILABLE_FUNCTIONS = {
     "query_hive": query_hive,
     "query_hbase": query_hbase,
     "get_location_from_longitude_latitude": get_location_from_longitude_latitude,
+    "get_hive_schema": get_hive_schema,
 }

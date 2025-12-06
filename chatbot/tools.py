@@ -1,7 +1,63 @@
 import happybase
 from pyhive import hive
-
 from geopy.geocoders import Nominatim
+
+def get_hive_schema(table_name: str) -> str:
+    """
+    Fetches the schema for a given Hive table, including column names and data types.
+    This should be the first step before constructing a query.
+    :param table_name: The name of the Hive table to describe (e.g., 'ayaachi_parking_avail_data').
+    """
+    host_name = "localhost"
+    port = 10000
+    user = "hadoop"
+    database = "default"
+
+    try:
+        conn = hive.Connection(host=host_name, port=port, username=user, database=database)
+        cursor = conn.cursor()
+        
+        # Execute DESCRIBE FORMATTED to get detailed schema
+        cursor.execute(f"DESCRIBE FORMATTED {table_name}")
+        
+        # Fetch all rows and format them into a single string
+        schema_rows = cursor.fetchall()
+        
+        # Find the start of the column list
+        col_list_start_index = -1
+        for i, row in enumerate(schema_rows):
+            if row[0].strip() == '# col_name':
+                col_list_start_index = i + 1
+                break
+        
+        # Find the end of the column list
+        col_list_end_index = -1
+        if col_list_start_index != -1:
+            for i in range(col_list_start_index, len(schema_rows)):
+                if schema_rows[i][0].strip().startswith('#'):
+                    col_list_end_index = i
+                    break
+            if col_list_end_index == -1:
+                col_list_end_index = len(schema_rows)
+
+        # Format the relevant part of the schema
+        if col_list_start_index != -1:
+            formatted_schema = "Table Schema:\n"
+            for row in schema_rows[col_list_start_index:col_list_end_index]:
+                col_name = row[0].strip()
+                col_type = row[1].strip()
+                if col_name: # Avoid empty lines
+                    formatted_schema += f"- {col_name} ({col_type})\n"
+            return formatted_schema
+        else:
+            return "Could not parse schema from DESCRIBE FORMATTED output."
+
+    except Exception as e:
+        return f"Error executing Hive query to get schema: {e}"
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
 
 def query_hive(query: str) -> str:
     """
@@ -63,23 +119,17 @@ def get_location_from_longitude_latitude(longitude: float, latitude: float) -> s
     if location:
         print(f"Address: {location.address}")
         print(f"Raw location data: {location.raw}")
-        # You can access more specific details from location.raw if needed
-        # print(f"Raw data: {location.raw}")
         return str(location.raw)
     else:
         print("Could not find location for the provided coordinates.")
-
-
+        return "Location not found."
 
 if __name__ == '__main__':
-    # pass
-    print("This file contains tool definitions for querying Hive and HBase.")
-
-    print("Testing Hive query...")
-    hive_result = query_hive("SELECT * FROM ayaachi_parking_avail_data LIMIT 5")
-    print(f"Hive Result: {hive_result}")
-
-    print("\nTesting HBase query...")
-    hbase_result = query_hbase("ayaachi_parking_availability_latest", "BHMBCCMKT01")
-    print(f"HBase Result: {hbase_result}")
-
+    print("This file contains tool definitions.")
+    print("\nTesting get_hive_schema...")
+    schema_result = get_hive_schema("ayaachi_parking_avail_data")
+    print(f"Schema Result:\n{schema_result}")
+    
+    # print("\nTesting Hive query...")
+    # hive_result = query_hive("SELECT * FROM ayaachi_parking_avail_data LIMIT 1")
+    # print(f"Hive Result: {hive_result}")
