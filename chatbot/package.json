@@ -1,0 +1,14 @@
+
+{
+  "name": "chatbot-ui",
+  "version": "1.0.0",
+  "description": "A simple chatbot UI with an Express backend.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.20.1"
+  }
+}
