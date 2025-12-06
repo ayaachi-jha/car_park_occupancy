@@ -1,11 +1,34 @@
-from tools import query_hive, query_hbase, get_location_from_longitude_latitude, get_hive_schema
+from tools import (
+    query_hive, 
+    query_hbase, 
+    get_location_from_longitude_latitude, 
+    get_hive_schema,
+    search_knowledge_base
+)
 
 TOOL_LIST = [
     {
         "type": "function",
         "function": {
+            "name": "search_knowledge_base",
+            "description": "Searches a knowledge base of text documents for information. Use this for general questions about the system, its purpose, or for information not found in the databases.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The user's question or search term to look for in the documents.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_hive_schema",
-            "description": "Use this tool first to get the schema of a Hive table before you write a SQL query. This is a mandatory first step.",
+            "description": "Use this tool to get the schema of a Hive table before you write a SQL query.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -22,13 +45,13 @@ TOOL_LIST = [
         "type": "function",
         "function": {
             "name": "query_hive",
-            "description": "Executes a read-only SQL query on a Hive table to find information about car park data.",
+            "description": "Executes a read-only SQL query on a Hive table.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The SQL query to execute. Should be a SELECT statement based on a schema you have already fetched.",
+                        "description": "The SQL query to execute, based on a schema you have already fetched.",
                     },
                 },
                 "required": ["query"],
@@ -39,7 +62,7 @@ TOOL_LIST = [
         "type": "function",
         "function": {
             "name": "query_hbase",
-            "description": "Fetches real-time availability for a specific car park from an HBase table using its row key (system_code_number).",
+            "description": "Fetches real-time data for a specific car park from an HBase table using its row key.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -49,7 +72,7 @@ TOOL_LIST = [
                     },
                     "row_key": {
                         "type": "string",
-                        "description": "The row key to fetch, which corresponds to the car park's system_code_number, e.g., 'BHMBCCMKT01'",
+                        "description": "The row key (system_code_number) to fetch.",
                     },
                 },
                 "required": ["table_name", "row_key"],
@@ -60,18 +83,12 @@ TOOL_LIST = [
         "type": "function",
         "function": {
             "name": "get_location_from_longitude_latitude",
-            "description": "Gives the location of a place from the longitude and the latitude. Use it when you know the longitude and latitude of the place.",
+            "description": "Gets a physical address from longitude and latitude coordinates.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "longitude": {
-                        "type": "number",
-                        "description": "The longitude of the address of the location which is needed.",
-                    },
-                    "latitude": {
-                        "type": "number",
-                        "description": "The latitude of the address of the location which is needed.",
-                    },
+                    "longitude": {"type": "number"},
+                    "latitude": {"type": "number"},
                 },
                 "required": ["longitude", "latitude"],
             },
@@ -84,4 +101,5 @@ AVAILABLE_FUNCTIONS = {
     "query_hbase": query_hbase,
     "get_location_from_longitude_latitude": get_location_from_longitude_latitude,
     "get_hive_schema": get_hive_schema,
+    "search_knowledge_base": search_knowledge_base,
 }

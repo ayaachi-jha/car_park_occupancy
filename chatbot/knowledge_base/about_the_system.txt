@@ -1,0 +1,11 @@
+This document provides information about the car park system.
+
+The primary goal of the system is to provide real-time and historical data about car park availability in Birmingham.
+
+Data is stored in two main systems:
+1. A real-time HBase table for the absolute latest data.
+2. A historical Hive table for analytical queries.
+
+The system uses a chatbot interface to allow users to query this data using natural language.
+The chatbot is powered by an OpenAI model and a set of custom tools for data retrieval.
+The main identifier for any car park is its `system_code_number`.

@@ -1,0 +1,54 @@
+# Car Park Data Query Cookbook
+
+This document provides a guide and examples for how to query the car park database to answer common and analytical questions.
+
+## Section 1: Common Single Car Park Queries
+
+These queries are for when a user asks about a specific car park, identified by its `system_code_number`. While the `query_hbase` tool is often best for this, these SQL queries can also be used.
+
+**IMPORTANT**: When querying for the latest data point for a specific car park, you MUST always order by the timestamp and limit the result to 1.
+
+**Question: "What is the capacity of car park 'BHMBCCMKT01'?"**
+```sql
+SELECT capacity FROM ayaachi_parking_avail_data WHERE system_code_number = 'BHMBCCMKT01' ORDER BY record_timestamp DESC LIMIT 1
+```
+
+**Question: "How many spaces are available at 'BHMBCCMKT01'?"**
+```sql
+SELECT available_occupancy FROM ayaachi_parking_avail_data WHERE system_code_number = 'BHMBCCMKT01' ORDER BY record_timestamp DESC LIMIT 1
+```
+
+**Question: "What is the current traffic condition near 'BHMBCCMKT01'?"**
+```sql
+SELECT traffic_condition_nearby FROM ayaachi_parking_avail_data WHERE system_code_number = 'BHMBCCMKT01' ORDER BY record_timestamp DESC LIMIT 1
+```
+
+## Section 2: Analytical Queries
+
+Analytical queries involve calculations or comparisons across multiple records or multiple car parks. They often use functions like `AVG()`, `COUNT()`, `SUM()`, `GROUP BY`, and `ORDER BY`.
+
+**Question: "Which 5 car parks are the busiest right now?"**
+*   **Logic:** "Busiest" means having the highest `occupancy`. We need to find the most recent record for each car park and then order them. A simple approach is to order all recent records.
+```sql
+SELECT system_code_number, occupancy FROM ayaachi_parking_avail_data ORDER BY occupancy DESC LIMIT 5
+```
+
+**Question: "What is the average occupancy across all car parks for the last hour?"**
+*   **Logic:** This requires filtering records by the `record_timestamp` and then calculating the average of the `occupancy` column.
+```sql
+SELECT AVG(occupancy) FROM ayaachi_parking_avail_data WHERE record_timestamp >= NOW() - INTERVAL 1 HOUR
+```
+*(Note: The exact date/time functions might vary slightly depending on the specific Hive setup, but this is the standard approach.)*
+
+**Question: "List all car parks with a queue length greater than 5."**
+*   **Logic:** This is a filtering query on the `queue_length` column.
+```sql
+SELECT system_code_number, queue_length FROM ayaachi_parking_avail_data WHERE queue_length > 5
+```
+
+**Question: "What was the average occupancy for car park 'BHMBCCMKT01' yesterday?"**
+*   **Logic:** This requires filtering by both `system_code_number` and a date range for the `record_timestamp`.
+```sql
+SELECT AVG(occupancy) FROM ayaachi_parking_avail_data WHERE system_code_number = 'BHMBCCMKT01' AND record_timestamp >= '2025-12-05 00:00:00' AND record_timestamp <= '2025-12-05 23:59:59'
+```
+*(Note: The model should replace the date with the actual date for "yesterday".)*

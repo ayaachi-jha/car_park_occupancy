@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const data = await response.json();
-                
+
                 if (data.error) {
                     appendMessage(data.error, 'bot');
                 } else {

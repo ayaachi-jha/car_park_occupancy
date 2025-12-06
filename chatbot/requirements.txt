@@ -2,3 +2,7 @@ Flask
 openai
 happybase
 PyHive[hive]
+langchain
+langchain-community
+sentence-transformers
+faiss-cpu

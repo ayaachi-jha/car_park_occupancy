@@ -2,6 +2,64 @@ import happybase
 from pyhive import hive
 from geopy.geocoders import Nominatim
 
+# Imports for RAG
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+import os
+
+# RAG Tool
+
+embeddings_model = None
+vector_db = None
+FAISS_INDEX_PATH = "faiss_index"
+
+def initialize_rag():
+    """
+    Initializes the RAG components (embedding model and vector DB).
+    This is called once when the application starts.
+    """
+    global embeddings_model, vector_db
+    if os.path.exists(FAISS_INDEX_PATH):
+        print("Initializing RAG components...")
+        embeddings_model = HuggingFaceEmbeddings(
+            model_name='all-MiniLM-L6-v2',
+            model_kwargs={'device': 'cpu'}
+        )
+        vector_db = FAISS.load_local(FAISS_INDEX_PATH, embeddings_model, allow_dangerous_deserialization=True)
+        print("RAG components initialized successfully.")
+    else:
+        print(f"Warning: FAISS index not found at '{FAISS_INDEX_PATH}'. The search_knowledge_base tool will not work.")
+        print("Please run 'python ingest.py' to create the index.")
+
+def search_knowledge_base(query: str) -> str:
+    """
+    Searches the knowledge base of text documents for information relevant to the user's query.
+    Use this for general questions about the system, its purpose, or for information not found in the databases.
+    :param query: The user's query or search term.
+    """
+    global vector_db
+    if vector_db is None:
+        return "Error: The knowledge base is not available. The FAISS index has not been loaded."
+
+    try:
+        # Perform a similarity search
+        results = vector_db.similarity_search(query, k=3) # Get top 3 most relevant chunks
+
+        if not results:
+            return "No relevant information found in the knowledge base."
+
+        # Format the results into a single context string
+        context = "--- Relevant Information from Knowledge Base ---"
+        for i, doc in enumerate(results):
+            context += f"Source Document {i+1}:\n\n"
+            context += f"{doc.page_content}\n\n"
+        return context
+    except Exception as e:
+        return f"An error occurred during the knowledge base search: {e}"
+
+
+# --- Database and Geocoding Tools ---
+
 def get_hive_schema(table_name: str) -> str:
     """
     Fetches the schema for a given Hive table, including column names and data types.
@@ -16,120 +74,57 @@ def get_hive_schema(table_name: str) -> str:
     try:
         conn = hive.Connection(host=host_name, port=port, username=user, database=database)
         cursor = conn.cursor()
-        
-        # Execute DESCRIBE FORMATTED to get detailed schema
         cursor.execute(f"DESCRIBE FORMATTED {table_name}")
-        
-        # Fetch all rows and format them into a single string
         schema_rows = cursor.fetchall()
-        
-        # Find the start of the column list
-        col_list_start_index = -1
-        for i, row in enumerate(schema_rows):
-            if row[0].strip() == '# col_name':
-                col_list_start_index = i + 1
-                break
-        
-        # Find the end of the column list
-        col_list_end_index = -1
-        if col_list_start_index != -1:
-            for i in range(col_list_start_index, len(schema_rows)):
-                if schema_rows[i][0].strip().startswith('#'):
-                    col_list_end_index = i
-                    break
-            if col_list_end_index == -1:
-                col_list_end_index = len(schema_rows)
 
-        # Format the relevant part of the schema
+        col_list_start_index = next((i for i, row in enumerate(schema_rows) if row[0].strip() == '# col_name'), -1)
         if col_list_start_index != -1:
+            col_list_start_index += 1
+            col_list_end_index = next((i for i, row in enumerate(schema_rows[col_list_start_index:]) if row[0].strip().startswith('#')), len(schema_rows))
+
             formatted_schema = "Table Schema:\n"
-            for row in schema_rows[col_list_start_index:col_list_end_index]:
-                col_name = row[0].strip()
-                col_type = row[1].strip()
-                if col_name: # Avoid empty lines
+            for row in schema_rows[col_list_start_index:col_list_start_index + col_list_end_index]:
+                col_name, col_type = row[0].strip(), row[1].strip()
+                if col_name:
                     formatted_schema += f"- {col_name} ({col_type})\n"
             return formatted_schema
-        else:
-            return "Could not parse schema from DESCRIBE FORMATTED output."
-
+        return "Could not parse schema."
     except Exception as e:
         return f"Error executing Hive query to get schema: {e}"
     finally:
-        if 'conn' in locals() and conn:
-            conn.close()
-
+        if 'conn' in locals() and conn: conn.close()
 
 def query_hive(query: str) -> str:
-    """
-    Executes a read-only SQL query on a Hive table and returns the result.
-    :param query: The SQL query to execute.
-    """
     host_name = "localhost"
     port = 10000
     user = "hadoop"
     database = "default"
-
     try:
         conn = hive.Connection(host=host_name, port=port, username=user, database=database)
         cursor = conn.cursor()
         cursor.execute(query)
         result = cursor.fetchall()
-        conn.close()
-
         return str(result)
     except Exception as e:
         return f"Error executing Hive query: {e}"
+    finally:
+        if 'conn' in locals() and conn: conn.close()
 
 def query_hbase(table_name: str, row_key: str) -> str:
-    """
-    Fetches a single row from an HBase table based on its row key.
-    :param table_name: The name of the HBase table.
-    :param row_key: The row key to fetch.
-    """
     host_name = "localhost"
     port = 9090
-
     try:
         connection = happybase.Connection(host=host_name, port=port)
         table = connection.table(table_name)
         row = table.row(row_key)
-        connection.close()
-
         decoded_row = {k.decode('utf-8'): v.decode('utf-8') for k, v in row.items()}
-
         return str(decoded_row)
     except Exception as e:
         return f"Error executing HBase query: {e}"
+    finally:
+        if 'connection' in locals() and connection.transport.is_open(): connection.close()
 
 def get_location_from_longitude_latitude(longitude: float, latitude: float) -> str:
-    """
-    Returns the location of the place from the longitude and the latitude
-
-    :param longitude: Longitude coordinates
-    :param latitude: Latitude coordinates
-    """
-    # Init the Nominatim geocoder
-    # unique user_agent string
     geolocator = Nominatim(user_agent="project-birmingham-car-park-chatbot")
-
-    # Perform reverse geocoding
     location = geolocator.reverse((latitude, longitude))
-
-    # Print the full address
-    if location:
-        print(f"Address: {location.address}")
-        print(f"Raw location data: {location.raw}")
-        return str(location.raw)
-    else:
-        print("Could not find location for the provided coordinates.")
-        return "Location not found."
-
-if __name__ == '__main__':
-    print("This file contains tool definitions.")
-    print("\nTesting get_hive_schema...")
-    schema_result = get_hive_schema("ayaachi_parking_avail_data")
-    print(f"Schema Result:\n{schema_result}")
-    
-    # print("\nTesting Hive query...")
-    # hive_result = query_hive("SELECT * FROM ayaachi_parking_avail_data LIMIT 1")
-    # print(f"Hive Result: {hive_result}")
+    return str(location.raw) if location else "Location not found."
