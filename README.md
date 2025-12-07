@@ -4,6 +4,10 @@ This project provides a real-time data ingestion pipeline for car park availabil
 
 The chatbot can be used for running analytics on Hive and Hbase tables in general, thus allowing for faster and easier analytics with natural language.
 
+For Big Data Application Architecture go [here](#kappa-architecture).
+
+For Generative AI go [here](#agentic-ai-chatbot).
+
 ![alt text](images/image.png)
 
 ## Demo
@@ -19,8 +23,6 @@ The documentation refers to the code and the paths existing in EMR. For locally 
 - Kafka Fake Producer and Topic creation scripts are in `ingestion/kafka_ingestion`
 - The Kafka Consumer Spark Streaming code is in `car_park_kafka_ingestion/` directory.
 - The chatbot code is in `chatbot/` directory.
-
-
 
 # Kappa Architecture
 
@@ -382,9 +384,17 @@ python fake_producer.py
 
 By default it produces a record every 5 seconds until 200 records are produced.
 
-## 3. Chatbot Application
+# Agentic AI Chatbot
 
-The chatbot provides a natural language interface to query the car park data. The chatbot is not limited to querying the car park data. It has the ability to perform analytics on Hive & HBase using natural language. It answer user queries by querying the database appropriately.
+## 3. Analytics Assistant
+
+The Agentic AI Chatbot provides a natural language interface for running analytical and online queries on Hive & Hbase. It can identify relevant tables, form the correct query and run it against Hive/HBase tables. It can answer user queries in natural language and provide analytical answers back to the user by analyzing the data from the tables.
+
+For this project, the application has context on **Car Parking Data** which is sourced through the Big Data Pipeline described in the previous sections. It can answer questions about the status of the car parkings and analyze the historical trends etc. for the car parkings.
+
+### Demo on YouTube: [https://youtu.be/HOKYPr0L9zw](https://youtu.be/HOKYPr0L9zw)
+
+## `LLM: GPT-3.5-Turbo`
 
 ![alt text](images/image.png)
 
@@ -469,8 +479,6 @@ It can be provided with more workflows by adding `.txt` documentation in the `kn
 
 The core logic is orchestrated by a Python Flask backend, which manages the entire lifecycle of a user's query.
 
-`LLM: GPT-3.5-Turbo`
-
 #### Request Handling and Core Loop
 
 1.  **API Endpoint**: All user interactions are sent to the `/api/chat` endpoint of the Flask application. The request contains the conversation history.
@@ -494,5 +502,39 @@ To ensure accuracy and prevent errors when dealing with complex analytical queri
 5.  **Step 5: Synthesize the Answer**: Finally, the model analyzes the results returned and formulates an answer for the user.
 
 This structured approach makes the chatbot robust, adaptable to schema changes, and capable of handling complex analytical tasks that would otherwise require a human analyst.
+
+### 3.5 Features and the idea behind them
+
+**1. RAG**
+
+We need the RAG integration to ensure that we can provide the LLM context on different tables and the kind of data they store. This allows the LLM to grow smarter as more documentation/runbooks are added to the knowledge base, allowing it to query the tables on Hive/HBase more effectively. More than it also provides context on what kind of query to form.
+
+**2. Fetch Relevant Tables Tool**
+
+Initially the application had the fetch_hive_schema tool which allowed it to fetch the schema for a table. But it is very unpredictable to let the LLM decide which table's schema to fetch and sometimes the LLM would not fetch the schema and hallucinate the columns available thus forming an incorrect SQL query and throwing errors.
+
+The Fetch Relevant Tables Tool allows the LLM to use this as a prerequisite step to first identify which table to query as it also provides the description and relevance of each table. Therefore, querying the right table with the right schema. This reduced the errors in querying Hive significantly.
+
+**3. Query Hive Tool**
+
+This tool allows the LLM to run queries on the Hive tables. It returns the results of the queries to the LLM as context, which allows the LLM to provide insightful and data-backed answers to the users' queries.
+
+Therefore, it can run complex analytics just through natural language inputs.
+
+**4. Query HBase Tool**
+
+The reason is similar to Hive, but it provides a low-latency output for the LLM. For large Hive tables the LLM can be slow to respond due to the query runtimes, but with the context from the knowledge base it knows that realtime data can be queried from relevant HBase tables at low-latency. This allows the LLM to query HBase tables for real-time queries.
+
+The benefit of segregating the two is that we are fully utilizing the LLM's capabilities to understand what kind of query needs to be run thus getting an efficient tool usage by the LLM.
+
+**5. Mult-Tool Call Feature**
+
+This is a part of chat handling, where the application enables the LLM to take the result of the tool call and then call tools again. The application keeps looping until the finishing reason for the LLM is not "stop" i.e. the LLM has generated the final response. This allows for a more in-depth analysis by the LLM before responding.
+
+It also enables the users to define complex workflows through the knowledge base, like currently for running queries on Hive, it almost always searches the knowledge base, then fetches the relevant tables, and then queries the table, thus, using 3 tool calls in succession. This helps in providing accurate answers without any intermittent errors in running the queries on Hive.
+
+**6. Future Work**
+
+The application requires context management, especially context summarization to avoid context overflow errors. Also, we need a configuration to define the max rows to send to the LLM to prevent a large output query to overflow the context window.
 
 ---
