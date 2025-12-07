@@ -135,10 +135,10 @@ def get_hive_schema(table_name: str) -> str:
     This should be the first step before constructing a query.
     :param table_name: The name of the Hive table to describe (e.g., 'ayaachi_parking_avail_data').
     """
-    host_name = "localhost"
-    port = 10000
-    user = "hadoop"
-    database = "default"
+    host_name = HIVE_HOST_NAME
+    port = HIVE_PORT
+    user = HIVE_USER
+    database = HIVE_DATABASE
 
     try:
         conn = hive.Connection(host=host_name, port=port, username=user, database=database)
