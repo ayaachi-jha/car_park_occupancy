@@ -4,9 +4,11 @@ This project provides a real-time data ingestion pipeline for car park availabil
 
 The chatbot can be used for running analytics on Hive and Hbase tables in general, thus allowing for faster and easier analytics with natural language.
 
-For Big Data Application Architecture go [here](#kappa-architecture).
+#### **For Big Data Application Architecture go [here](#kappa-architecture).**
 
-For Generative AI go [here](#agentic-ai-chatbot).
+#### **For Generative AI go [here](#agentic-ai-chatbot).**
+
+#### For the complete picture, start reading from right here.
 
 ![alt text](images/image.png)
 
