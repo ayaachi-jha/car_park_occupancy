@@ -451,6 +451,38 @@ The chatbot uses the following custom tools:
 
 ### 3.4 Working of the Chatbot
 
+The chatbot is an AI Agent that follows a structured workflow for answering user queries on analytical databases in natural language. It has the tools to query HBase and Hive and has the context on the table description to form the right queries and give the answers.
+
+It can be provided with more workflows by adding `.txt` documentation in the `knowledge_base/` directory which is a source for creating the vector database for RAG.
+
+The core logic is orchestrated by a Python Flask backend, which manages the entire lifecycle of a user's query.
+
+`LLM: GPT-3.5-Turbo`
+
+#### Request Handling and Core Loop
+
+1.  **API Endpoint**: All user interactions are sent to the `/api/chat` endpoint of the Flask application. The request contains the conversation history.
+2.  **System Prompt**: For a new conversation, a detailed `SYSTEM_PROMPT` is prepended to the message history. This prompt instructs the AI model on its role as a data analyst, outlines the mandatory workflows for querying data, and defines the rules it must follow.
+3.  **Model Invocation**: The backend sends the complete message history (including the system prompt) to the OpenAI API.
+4.  **Tool-Use Loop**: The model doesn't just generate text, it decides if it needs to use a tool to answer the question.
+    *   If the model determines a tool is necessary, its response will contain a `tool_calls` object specifying the function to call (e.g., `query_hive`) and the arguments (e.g., a SQL query).
+    *   The Flask backend executes the specified function.
+    *   The function's return value (e.g., query results from Hive) is packaged into a "tool" message and sent back to the model in a new API call.
+    *   This loop continues until the model has all the information it needs.
+5.  **Final Response**: Once the model has gathered sufficient information from the tools, it generates a final, human-readable answer. The backend receives this as a standard text response and forwards it to the user interface.
+
+#### Critical Workflow for Hive & HBase Queries
+
+To ensure accuracy and prevent errors when dealing with complex analytical queries, the chatbot is programmed to follow a strict, multi-step workflow for all Hive-related questions:
+
+1.  **Step 1: Retrieve Query Examples (RAG)**: The model first calls the `search_knowledge_base` tool. It uses keywords from the user's query to search a FAISS vector database containing a "query cookbook." This step provides the model with proven query patterns and examples, guiding it on how to structure complex SQL.
+2.  **Step 2: Discover Schema**: Next, the model calls `get_relevant_tables()`, which reads a local XML file (`hive_schema.xml`) containing the complete, up-to-date schemas for all Hive tables. This ensures the model never hallucinates table or column names.
+3.  **Step 3: Construct the Query**: Using the context from the cookbook examples and the live schemas, the model constructs a precise and syntactically correct HiveQL query.
+4.  **Step 4: Execute the Query**: The model then calls the `query_hive` tool, passing the generated SQL query to be executed against the Hive database or query the HBase using `query_hbase` tool by parsing the `row_key` provided by the user.
+5.  **Step 5: Synthesize the Answer**: Finally, the model analyzes the results returned and formulates an answer for the user.
+
+This structured approach makes the chatbot robust, adaptable to schema changes, and capable of handling complex analytical tasks that would otherwise require a human analyst.
+
 
 
 ---
