@@ -378,6 +378,8 @@ By default it produces a record every 5 seconds until 200 records are produced.
 
 The chatbot provides a natural language interface to query the car park data. The chatbot is not limited to querying the car park data. It has the ability to perform analytics on Hive & HBase using natural language. It answer user queries by querying the database appropriately.
 
+![alt text](images/image.png)
+
 ### 3.1 Features
 
 *   **Flask Backend:** A Python Flask application handles API requests and orchestrates interactions with the OpenAI model and data tools.
@@ -387,6 +389,8 @@ The chatbot provides a natural language interface to query the car park data. Th
 *   **Dynamic Schema Discovery:** Fetches live database schemas to ensure accurate SQL query generation.
 
 ### 3.2 Tools
+
+The code for the tools is present in `chatbot/tools.py`
 
 The chatbot uses the following custom tools:
 
@@ -482,7 +486,5 @@ To ensure accuracy and prevent errors when dealing with complex analytical queri
 5.  **Step 5: Synthesize the Answer**: Finally, the model analyzes the results returned and formulates an answer for the user.
 
 This structured approach makes the chatbot robust, adaptable to schema changes, and capable of handling complex analytical tasks that would otherwise require a human analyst.
-
-
 
 ---
