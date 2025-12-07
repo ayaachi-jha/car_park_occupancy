@@ -10,7 +10,7 @@ The chatbot can be used for running analytics on Hive and Hbase tables in genera
 
 #### For the complete picture, start reading from right here.
 
-![alt text](images/image.png)
+![alt text](images/image_new.png)
 
 ## Demo
 
@@ -398,7 +398,7 @@ For this project, the application has context on **Car Parking Data** which is s
 
 ## `LLM: GPT-3.5-Turbo`
 
-![alt text](images/image.png)
+![alt text](images/image_new.png)
 
 ### 3.1 Features
 
