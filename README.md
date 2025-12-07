@@ -4,6 +4,14 @@ This project provides a real-time data ingestion pipeline for car park availabil
 
 The chatbot can be used for running analytics on Hive and Hbase tables in general, thus allowing for faster and easier analytics with natural language.
 
+![alt text](images/image.png)
+
+## Demo
+
+### Demo on YouTube: [https://youtu.be/HOKYPr0L9zw](https://youtu.be/HOKYPr0L9zw)
+
+[![Demo Video](https://img.youtube.com/vi/HOKYPr0L9zw/0.jpg)](https://www.youtube.com/watch?v=HOKYPr0L9zw)
+
 ## Resources
 The documentation refers to the code and the paths existing in EMR. For locally referencing the code, you can see the scripts in the following directories.
 
