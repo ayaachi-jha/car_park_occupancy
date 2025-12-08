@@ -17,6 +17,7 @@ object CarParkHiveIngestion {
 
   val RAW_HDFS_LOCATION = "hdfs://ip-172-31-91-77.ec2.internal:8020/ayaachi/data/"
   val KAFKA_TOPIC = "ayaachi_car_park"
+  val BATCH_WRITE_INTERVAL = 1800 // In seconds
 
   def main(args: Array[String]): Unit = {
     if (args.length < 1) {
@@ -40,7 +41,7 @@ object CarParkHiveIngestion {
     val kafkaParams = javaProps.asScala.map { case (k, v) => (k, v.asInstanceOf[Object]) }.toMap
 
     val conf = new SparkConf().setAppName("CarParkHiveIngestion")
-    val ssc = new StreamingContext(conf, Seconds(30)) // Batch interval: 30 seconds
+    val ssc = new StreamingContext(conf, Seconds(BATCH_WRITE_INTERVAL)) // Batch interval: 30 mintues by default
     ssc.sparkContext.setLogLevel("WARN") // Reduce noise
 
     val topics = Array(KAFKA_TOPIC)
@@ -93,7 +94,7 @@ object CarParkHiveIngestion {
 
               } catch {
                 case e: Exception =>
-                  System.err.println(s"❌ ERROR: Failed to parse JSON for Lot $systemCode: ${e.getMessage}")
+                  System.err.println(s"ERROR: Failed to parse JSON for Lot $systemCode: ${e.getMessage}")
               }
             }
 
