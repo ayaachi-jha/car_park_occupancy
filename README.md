@@ -26,7 +26,7 @@ EMR Cluster For the Big Data Application Deployment:
 ec2-34-230-47-10.compute-1.amazonaws.com
 ```
 
-**Note:** I have completed the project on the old EMR cluster in which the Scala version got upgraded which broke the Spark Streaming jobs.
+**Note:** I have completed the project on the old EMR cluster in which the Scala version got upgraded which broke the Spark Streaming jobs. Also, the HDFS data is still present for my tables so it can be queried fine. Therefore, the pipeline works without errors.
 
 **Special Note:** I found an experimental workaround for submitting the spark streaming jobs without any errors for the demo.
 
