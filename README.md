@@ -19,6 +19,23 @@ The chatbot can be used for running analytics on Hive and Hbase tables in genera
 [![Demo Video](https://img.youtube.com/vi/HOKYPr0L9zw/0.jpg)](https://www.youtube.com/watch?v=HOKYPr0L9zw)
 
 ## Resources
+
+EMR Cluster For the Big Data Application Deployment:
+
+```
+ec2-34-230-47-10.compute-1.amazonaws.com
+```
+
+**Note:** I have completed the project on the old EMR cluster in which the Scala version got upgraded which broke the Spark Streaming jobs.
+
+**Special Note:** I found an experimental workaround for submitting the spark streaming jobs without any errors for the demo.
+
+Please run the following command to activate the python virtual environment before submitting the `spark-submit` jobs for your local runs. This is the environment for running the fake data producer in python which is discussed in detail in the later sections.
+```
+source /home/hadoop/ayaachi/kafka_code/.venv/bin/activate
+```
+Running the `spark-submit` with the Python virtual environment activated, allows for the Spark jobs to run without errors which would otherwise occur due to the spark version issue on the cluster.
+
 The documentation refers to the code and the paths existing in EMR. For locally referencing the code, you can see the scripts in the following directories.
 
 - Create Table Statements are in `ingestion/hbase` and `ingestion/hiv`e directories.
@@ -301,6 +318,14 @@ Both jobs must be submitted separately and run concurrently. This ensures that i
 The Jar is present in `/home/hadoop/ayaachi/jars`
 
 `cd /home/hadoop/ayaachi/jars`
+
+#### **Important Note**
+
+Before running the `spark-submit` commands provided below, please activate this Python virtual environment using the following command. This is a workaround for the issues that developed in the original (older) EMR cluster due the Scala version issues.
+
+```
+source /home/hadoop/ayaachi/kafka_code/.venv/bin/activate
+```
 
 #### Batch Ingestion
 
